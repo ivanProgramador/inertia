@@ -1,5 +1,6 @@
 
-1 - parte 
+1 - parte SERVER - SIDE 
+
 ---------------------------------------------------------------------------------------------------------
 Depois de instalar o laravel e conectar ele em uma abase de dados, 
 tenha certeza que ele está funcionado usando o comando 
@@ -17,6 +18,239 @@ A instalação do inertia possui duas fases
 2 - depois disso o arquivo de view welcome.blade.php dever ter o nome alterado para 
     app.blade.php a documentação não vai explicar isso 
 
-3 - dentro desse arquivo tem que colocar o coidog que ponta para as referencias  
+3 - dentro desse arquivo tem que colocar o codigo que ponta para as referencias 
 
--------------------------------------------------------------------------------------
+  3.1 chamando o vite é uma especie de lib que gerencia a chamada de view -> @vite('resources/js/app.js')
+  3.2 chamando o inertia e avisando que aqui é um cabeçalh de página para orintar a renderização -> @inertiaHead
+  3.3 chamando o inertia pra orientar onde fica o body -> @inertia
+
+Então sempre que a view for acionada o inertia vem junto 
+  
+---------------------------------------------------------------------------------------------
+    <html>
+        <head>
+            <meta charset="utf-8" />
+
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            
+            @vite('resources/js/app.js')
+
+            @inertiaHead
+        </head>
+        <body>
+            @inertia
+        </body>
+    </html>
+------------------------------------------------------------------------------------------------
+
+4 - criar e publicar um mid especifico pro inertia isso vai servir pra controle de requisição 
+    
+
+    php artisan inertia:middleware
+
+4.1 mas não basta so criar  tema colocar ele dentro do aquivo app.php que fica dentro do bootstrap 
+    que seria o inicializador do laravel.
+
+  depois de colocar o aquivo fica assim 
+
+        ------------------------------------------------------------------------------------------
+            return Application::configure(basePath: dirname(__DIR__))
+            ->withRouting(
+                web: __DIR__.'/../routes/web.php',
+                commands: __DIR__.'/../routes/console.php',
+                health: '/up',
+            )
+            ->withMiddleware(function (Middleware $middleware): void {
+
+            // tá aqui o middleware dele 
+
+                $middleware->web(append: [
+                    HandleInertiaRequests::class,
+                ]);
+
+
+            })
+            ->withExceptions(function (Exceptions $exceptions): void {
+                //
+            })->create();
+
+        -------------------------------------------------------------------------------------
+
+===============================================================================================================================
+
+2 - parte CLIENT SIDE 
+
+  Nessa fase ten que decidir qual framework vai usar pra renderização no lado cliente, eu quis o react então eu coloquei o comando abaixo
+
+    npm install @inertiajs/react
+
+   Estou com um node "LTS VERSÃO v22.22.0 " é necessário porque o react usa js,ts e jsx como rodou tudo certo  com essa versão
+   eu deixei ela 
+
+ 3 - o React tamabem tem um arquivo de inicialização ele fica na pasta "resources/js/" ele vai estar como app.js mas tem que mudar pra  
+     "app.jsx" senão dá conflito de compatibilidade.
+
+ 4 - o codigo que deve estar dentro dela é esse abaixo 
+
+  4.1 quando o React chegar aqui ele vai buscar por essa função -> createInertiaApp()
+      ela recebe 2 parameros 
+      o primeiro diz que componetes serão resolvidos então ele recebe um função name
+      que usa a constante pages pra dizer onde os compoentes devem ficar e que extensões devem ser aceitas 
+      a segundo só server pra retonar componentes e seus nomes 
+
+       {
+            resolve: name => {
+                const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
+                return pages[`./Pages/${name}.jsx`]
+       }
+
+       O segundo parametro e a configuração global que será usada por todos os outros componentes, dá pra diconar
+       ou remover execuções padrão   
+       então quando essa função é carregada o inertia ja sabe oque renbderizar e como renbderizar
+       os componentes.
+    
+     
+ ---------------------------------------------------------------------------------------
+        import React from 'react'
+        import { createInertiaApp } from '@inertiajs/react'
+        import { createRoot } from 'react-dom/client'
+
+        createInertiaApp({
+            resolve: name => {
+                const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true })
+                return pages[`./Pages/${name}.jsx`]
+            },
+            setup({ el, App, props }) {
+                createRoot(el).render(<App {...props} />)
+            },
+        })
+   
+ ----------------------------------------------------------------------------------------    
+ depois desses passos tem que criar uma pasta chamada Pages dentro desse caminho resources/js 
+ porque é lá que ele vai procurar os componentes.
+
+ trazer um dado da base para a tela usando o inertia
+
+ 1 - ao inves da rota retonar um json ela retorna um componete inertia, eu assumi uma estrutura mais tradicional 
+     essa rota chama meu controller "ProdutosController" que chama o meu index que esta dentro dele. 
+
+    Route::get('/produtos', [ProdutosController::class, 'index']);
+
+2  - chegando no index eu tenho a consulta dos meus produtos em caso normal 
+     eu ia colocar os resultados dentro de uma varivel e retornar a view 
+     mandando eles, mas nesse caso eu uso O metodo "render" da classe 
+     "Inertia" e passo pra ele duas coisas 
+
+     1 - meu componete "Produtos" que ele vai buscar la na pasta Pages 
+
+     2 - e um array porque esse index ele pode ser usado pra pesquisa
+         então eu tenho que retornar um filter pra uma função do componente 
+         que pede isso e no outro indice eu mando os produtos de forma integral.
+
+
+      public function index(Request $request)
+          {
+
+            $produtos = Produto::query()
+                        ->when($request->search, function ($query, $search) {
+                            $query->where('descricao', 'like', "%{$search}%")
+                                  ->orWhere('codigo', 'like', "%{$search}%");
+                        })
+                        ->get();
+
+              return Inertia::render('Produtos', [
+                  'produtos' => $produtos,
+                  'filters' => $request->only('search'),
+              ]);
+              
+          }
+
+  3 - o componente Produtos basicamnte é uma pagina tradicional de react com uma tabela e algumas funções,
+      com esses dados que eu passei ele preecehe as tabelas , faz as pesquisas  e tem uma pouco de tailwind na view 
+      os utro componetes seguem o mesmo padrão. 
+
+    ===============================================================================================
+    import '../../css/app.css'
+    import React, { useState, useEffect } from 'react'
+    import { router, Link } from '@inertiajs/react'
+
+    export default function Produtos({ produtos, filters }) {
+        const [search, setSearch] = useState(filters?.search || '')
+
+        useEffect(() => {
+            const timeout = setTimeout(() => {
+                router.get('/produtos', { search }, { 
+                    preserveState: true,
+                    replace: true 
+                })
+            }, 300) // debounce de 300ms
+
+            return () => clearTimeout(timeout)
+        }, [search])
+
+        return (
+            <div className='container mx-auto p-6'>
+
+                <h1 className='text-3xl font-bold mb-6' >Produtos</h1>
+                <div className='flex gap-4 mb-6'>
+                <input 
+                    type="text" 
+                    placeholder="Pesquisar..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="border rounded px-4 py-2 w-64"
+                />
+                <Link href="/produtos/create" 
+                
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >Novo Produto</Link>
+                </div>
+
+
+                
+                
+                <table className="w-full border-collapse" border="1">
+                    <thead>
+                        <tr className="bg-gray-800 text-white">
+                            <th className="border p-3 text-left" >Código</th>
+                            <th className="border p-3 text-left">Descrição</th>
+                            <th className="border p-3 text-left">Preço</th>
+                            <th className="border p-3 text-left">Unidade</th>
+                            <th className="border p-3 text-left">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {produtos.map(produto => (
+                            <tr className="hover:bg-gray-100" key={produto.id}>
+                                <td className="border p-3" >{produto.codigo}</td>
+                                <td className="border p-3" >{produto.descricao}</td>
+                                <td className="border p-3" >R$ {produto.preco}</td>
+                                <td className="border p-3">{produto.unidade}</td>
+                                <td className="border p-3 gap-2" >
+                                    <Link
+                                    className="bg-yellow-500 text-white px-3 py-1 rounded mr-2 hover:bg-yellow-600"
+                                    href={`/produtos/${produto.id}/edit`}>Editar
+                                    </Link>
+                                    
+                                <button onClick={() => handleDelete(produto.id)}
+                                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                                    >Excluir</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        )
+    }
+
+    
+    ==================================================================================================== 
+
+4 - funções como editar,deletar, validaçoes seguem o mesmo padrão ate aqui basta colocar os edpoints nos compontes 
+     
+   
+
+
+
+
