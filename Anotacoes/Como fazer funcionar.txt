@@ -1,0 +1,22 @@
+
+1 - parte 
+---------------------------------------------------------------------------------------------------------
+Depois de instalar o laravel e conectar ele em uma abase de dados, 
+tenha certeza que ele está funcionado usando o comando 
+php artisan serve 
+entre no link que será fornecido pelo servidor pra garantir que nenehum erro está acontecendo  
+----------------------------------------------------------------------------------------------------- 
+2 - parte instalar o inertia 
+-------------------------------------------------------------------------------------
+A instalação do inertia possui duas fases 
+1 - server side onde ele vai se unir ao lado que roda dentro do servidor 
+    comando de instalação 
+
+    composer require inertiajs/inertia-laravel
+
+2 - depois disso o arquivo de view welcome.blade.php dever ter o nome alterado para 
+    app.blade.php a documentação não vai explicar isso 
+
+3 - dentro desse arquivo tem que colocar o coidog que ponta para as referencias  
+
+-------------------------------------------------------------------------------------
