@@ -34,14 +34,14 @@ class ProdutosController extends Controller
           public function store(Request $request)
             {
               $request->validate([
-                  'codigo' => 'required|string',
+                  'codigo' => 'required|integer',
                   'descricao' => 'required|string',
                   'preco' => 'required|numeric',
                   'unidade' => 'required|string',
                 ]);
               
                 Produto::create($request->all());
-                return redirect('/produtos');
+                return redirect()->back();
               }
 
           public function edit($id)
@@ -54,14 +54,14 @@ class ProdutosController extends Controller
           public function update(Request $request, $id)
             {
                 $request->validate([
-                    'codigo' => 'required|string',
+                    'codigo' => 'required|integer',
                     'descricao' => 'required|string',
                     'preco' => 'required|numeric',
                     'unidade' => 'required|string',
                 ]);
                 
                 Produto::findOrFail($id)->update($request->all());
-                return redirect('/produtos');
+                return redirect()->back();
             }
 
     
