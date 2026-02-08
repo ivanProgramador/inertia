@@ -19,7 +19,7 @@ class ProdutosController extends Controller
                         })
                         ->get();
 
-              return Inertia::render('Produtos', [
+              return Inertia::render('Produtos/Produtos', [
                   'produtos' => $produtos,
                   'filters' => $request->only('search'),
               ]);
@@ -28,7 +28,7 @@ class ProdutosController extends Controller
 
           public function create()
               {
-                  return Inertia::render('ProdutoCreate');
+                  return Inertia::render('Produtos/ProdutoCreate');
               }
 
           public function store(Request $request)
@@ -46,7 +46,7 @@ class ProdutosController extends Controller
 
           public function edit($id)
             {
-                return Inertia::render('ProdutoEdit', [
+                return Inertia::render('Produtos/ProdutoEdit', [
                     'produto' => Produto::findOrFail($id)
                 ]);
             }
