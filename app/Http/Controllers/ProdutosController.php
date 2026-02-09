@@ -19,6 +19,10 @@ class ProdutosController extends Controller
                         })
                         ->get();
 
+           //no moelo de retorno inertia, ao inves de retonar uma view blade 
+           //ou porecessarr uma reuisição de blade, o inertia renderiza um componente do react, 
+           //passando os dados como props, a impressão que dá e que a rota nunca fecha              
+
               return Inertia::render('Produtos/Produtos', [
                   'produtos' => $produtos,
                   'filters' => $request->only('search'),
